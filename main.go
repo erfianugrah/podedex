@@ -60,6 +60,10 @@ func commandExit() error {
 }
 
 func commandHelp() error {
-	fmt.Print("Welcome to the Pokedex!\n Usage: \n help: Displays a help message \n exit: Exit the Pokedex \n")
+	fmt.Print(`Welcome to the Pokedex!
+Usage:
+  help: Displays a help message
+  exit: Exit the Pokedex
+`)
 	return nil
 }
