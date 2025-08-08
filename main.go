@@ -5,12 +5,18 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"net/http"
 )
 
 type cliCommand struct {
 	name        string
 	description string
 	callback    func() error
+}
+
+type config struct {
+	Next string
+	Previous string
 }
 
 func main() {
@@ -22,9 +28,14 @@ func main() {
 			callback:    commandExit,
 		},
 		"help": {
-			name:        "help",
+			name:   "help",
 			description: "Displays a help message",
 			callback:    commandHelp,
+		},
+		"map": {
+			name:"map",
+			description: "Displays a list of maps",
+			callback: map,
 		},
 	}
 	for {
@@ -48,22 +59,29 @@ func main() {
 }
 
 func cleanInput(text string) []string {
-
 	formattedText := strings.Fields(strings.ToLower(text))
 	return formattedText
 }
 
-func commandExit() error {
+func commandExit(urls config) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp() error {
+func commandHelp(urls config) error {
 	fmt.Print(`Welcome to the Pokedex!
 Usage:
   help: Displays a help message
   exit: Exit the Pokedex
 `)
 	return nil
+}
+
+func map(urls config) error {
+	
+}
+
+func mapb(urls config) error {
+
 }
