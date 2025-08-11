@@ -14,7 +14,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(urls *config) error
+	callback    func(urls *config, args []string) error
 }
 
 type config struct {
@@ -47,6 +47,11 @@ func main() {
 			description: "Displays previous list",
 			callback:    commandMapBack,
 		},
+		"explore": {
+			name:        "Explore a location",
+			description: "Location details",
+			callback:    commandExplore,
+		},
 	}
 
 	apiConfig := &config{
@@ -62,8 +67,9 @@ func main() {
 
 		if len(output) > 0 {
 			commandName := output[0]
+			args := output[1:]
 			if command, exists := commands[commandName]; exists {
-				err := command.callback(apiConfig)
+				err := command.callback(apiConfig, args)
 				if err != nil {
 					fmt.Print(err)
 				}
@@ -79,13 +85,13 @@ func cleanInput(text string) []string {
 	return formattedText
 }
 
-func commandExit(urls *config) error {
+func commandExit(urls *config, args []string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp(urls *config) error {
+func commandHelp(urls *config, args []string) error {
 	fmt.Print(`Welcome to the Pokedex!
 Usage:
   help: Displays a help message
@@ -94,7 +100,7 @@ Usage:
 	return nil
 }
 
-func commandMap(urls *config) error {
+func commandMap(urls *config, args []string) error {
 	var urlToFetch string
 	if urls.NextURL == nil {
 		urlToFetch = pokeapi.BaseURL
@@ -137,7 +143,7 @@ func commandMap(urls *config) error {
 	return nil
 }
 
-func commandMapBack(urls *config) error {
+func commandMapBack(urls *config, args []string) error {
 	var urlToFetch string
 	if urls.PreviousURL == nil {
 		fmt.Println("You're on the first page")
@@ -180,4 +186,59 @@ func commandMapBack(urls *config) error {
 		}
 	}
 	return nil
+}
+
+func commandExplore(urls *config, args []string) error {
+	if len(args) == 0 {
+		fmt.Println("Please input a location")
+		return nil
+	}
+	locationName := args[0]
+	url := pokeapi.BaseURL + locationName
+
+	fmt.Printf("Exploring %s...\n", locationName)
+
+	cachedData, found := urls.Cache.Get(url)
+
+	if found {
+		fmt.Println("Using cached data!") // Optional: show when cache is used
+		var res pokeapi.LocationAreaResponse
+		if err := json.Unmarshal(cachedData, &res); err != nil {
+			return err
+		}
+		pokemonMap := make(map[string]bool)
+		for i := 0; i < len(res.PokemonEncounters); i++ {
+			pokemonName := res.PokemonEncounters[i].Pokemon.Name
+			pokemonMap[pokemonName] = true
+		}
+		fmt.Println("Found Pokemon:")
+		for pokemonName := range pokemonMap {
+			fmt.Printf(" - %s\n", pokemonName)
+		}
+		return nil
+
+	}
+	fmt.Println("Fetching from API...") // Optional: show when making API call
+	res, err := pokeapi.FetchLocationArea(url)
+	if err != nil {
+		return err
+	}
+
+	// Add to cache (marshal the result)
+	data, err := json.Marshal(res)
+	if err == nil {
+		urls.Cache.Add(url, data)
+	}
+
+	pokemonMap := make(map[string]bool)
+	for i := 0; i < len(res.PokemonEncounters); i++ {
+		pokemonName := res.PokemonEncounters[i].Pokemon.Name
+		pokemonMap[pokemonName] = true
+	}
+	fmt.Println("Found Pokemon:")
+	for pokemonName := range pokemonMap {
+		fmt.Printf(" - %s\n", pokemonName)
+	}
+	return nil
+
 }
