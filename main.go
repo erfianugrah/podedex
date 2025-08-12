@@ -64,6 +64,11 @@ func main() {
 			description: "Look at the pokemon details",
 			callback:    commandInspect,
 		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Review the pokemon you caught",
+			callback:    commandPokedex,
+		},
 	}
 
 	apiConfig := &config{
@@ -313,6 +318,7 @@ func commandCatch(urls *config, args []string) error {
 	chance := rand.Intn(500)
 	if chance > difficulty {
 		fmt.Printf("%v was caught \n", name)
+		fmt.Printf("You may now inspect it with the inspect command \n")
 		urls.Pokemon[pokemonName] = *res
 
 	} else {
@@ -348,6 +354,17 @@ func commandInspect(config *config, args []string) error {
 		}
 		return nil
 	}
-	fmt.Println("Pokemon not found, catch the pokemon first")
+	fmt.Println("Pokemon not found, use the catch command to obtain it first")
+	return nil
+}
+
+func commandPokedex(config *config, args []string) error {
+	if len(config.Pokemon) == 0 {
+		fmt.Println("Catch a Pokemon first")
+		return nil
+	}
+	for _, pokemon := range config.Pokemon {
+		fmt.Printf("- %s\n", pokemon.Name)
+	}
 	return nil
 }
