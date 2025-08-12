@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"pokedexcli/internal/pokeapi"
 	"pokedexcli/internal/pokecache"
@@ -21,6 +22,7 @@ type config struct {
 	NextURL     *string
 	PreviousURL *string
 	Cache       *pokecache.Cache
+	Pokemon     map[string]pokeapi.Pokemon
 }
 
 func main() {
@@ -48,9 +50,14 @@ func main() {
 			callback:    commandMapBack,
 		},
 		"explore": {
-			name:        "Explore a location",
+			name:        "explore",
 			description: "Location details",
 			callback:    commandExplore,
+		},
+		"catch": {
+			name:        "catch",
+			description: "Attempt to catch a pokemon",
+			callback:    commandCatch,
 		},
 	}
 
@@ -58,6 +65,7 @@ func main() {
 		NextURL:     nil,
 		PreviousURL: nil,
 		Cache:       cache,
+		Pokemon:     make(map[string]pokeapi.Pokemon),
 	}
 	for {
 		fmt.Print("Pokedex > ")
@@ -193,7 +201,9 @@ func commandExplore(urls *config, args []string) error {
 		fmt.Println("Please input a location")
 		return nil
 	}
+
 	locationName := args[0]
+
 	url := pokeapi.BaseURL + locationName
 
 	fmt.Printf("Exploring %s...\n", locationName)
@@ -208,7 +218,7 @@ func commandExplore(urls *config, args []string) error {
 		}
 		pokemonMap := make(map[string]bool)
 		for i := 0; i < len(res.PokemonEncounters); i++ {
-			pokemonName := res.PokemonEncounters[i].Pokemon.Name
+			pokemonName := res.PokemonEncounters[i].PokemonName.Name
 			pokemonMap[pokemonName] = true
 		}
 		fmt.Println("Found Pokemon:")
@@ -232,13 +242,79 @@ func commandExplore(urls *config, args []string) error {
 
 	pokemonMap := make(map[string]bool)
 	for i := 0; i < len(res.PokemonEncounters); i++ {
-		pokemonName := res.PokemonEncounters[i].Pokemon.Name
+		pokemonName := res.PokemonEncounters[i].PokemonName.Name
 		pokemonMap[pokemonName] = true
 	}
 	fmt.Println("Found Pokemon:")
 	for pokemonName := range pokemonMap {
 		fmt.Printf(" - %s\n", pokemonName)
 	}
+	return nil
+
+}
+
+func commandCatch(urls *config, args []string) error {
+	if len(args) == 0 {
+		fmt.Println("Please input a pokemon")
+		return nil
+	}
+	pokemonName := args[0]
+
+	// Check if already caught
+	if _, alreadyCaught := urls.Pokemon[pokemonName]; alreadyCaught {
+		fmt.Printf("You have already caught %s!\n", pokemonName)
+		return nil
+	}
+
+	url := pokeapi.PokemonURL + pokemonName
+
+	fmt.Printf("Throwing a Pokeball at %s...\n", pokemonName)
+
+	// cachedData, found := urls.Cache.Get(url)
+	// if found {
+	// 	fmt.Println("Using cached data!") // Optional: show when cache is used
+	// 	var res pokeapi.Pokemon
+	// 	if err := json.Unmarshal(cachedData, &res); err != nil {
+	// 		return err
+	// 	}
+	// 	difficulty := res.Difficulty
+	// 	pokemonName := res.Name
+	//
+	// 	chance := rand.Intn(500)
+	// 	if chance > difficulty {
+	// 		fmt.Printf("%s was caught", pokemonName)
+	// 		urls.Pokemon[pokemonName] = res
+	//
+	// 	} else {
+	// 		fmt.Printf("%s escaped! \n", pokemonName)
+	// 	}
+	// 	return nil
+	//
+	// }
+	fmt.Println("Fetching from API...") // Optional: show when making API call
+	res, err := pokeapi.FetchPokemon(url)
+	if err != nil {
+		return err
+	}
+
+	// Add to cache (marshal the result)
+	data, err := json.Marshal(res)
+	if err == nil {
+		urls.Cache.Add(url, data)
+	}
+	difficulty := res.Difficulty
+	name := res.Name
+
+	chance := rand.Intn(500)
+	if chance > difficulty {
+		fmt.Printf("%v was caught \n", name)
+		urls.Pokemon[pokemonName] = *res
+
+	} else {
+		fmt.Printf("%v escaped! \n", name)
+
+	}
+
 	return nil
 
 }

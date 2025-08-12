@@ -8,6 +8,7 @@ import (
 )
 
 const BaseURL = "https://pokeapi.co/api/v2/location-area/"
+const PokemonURL = "https://pokeapi.co/api/v2/pokemon/"
 
 type Location struct {
 	Count    int            `json:"count"`
@@ -26,11 +27,16 @@ type LocationAreaResponse struct {
 }
 
 type PokemonEncounter struct {
-	Pokemon Pokemon `json:"pokemon"`
+	PokemonName PokemonName `json:"pokemon"`
+}
+
+type PokemonName struct {
+	Name string `json:"name"`
 }
 
 type Pokemon struct {
-	Name string `json:"name"`
+	Difficulty int    `json:"base_experience"`
+	Name       string `json:"name"`
 }
 
 func FetchLocation(url string) (*Location, error) {
@@ -81,4 +87,29 @@ func FetchLocationArea(url string) (*LocationAreaResponse, error) {
 		return nil, err
 	}
 	return &newLocation, nil
+}
+
+func FetchPokemon(url string) (*Pokemon, error) {
+	req, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	defer req.Body.Close()
+
+	if req.StatusCode > 299 {
+		log.Fatalf("Response failed with status code: %d\n", req.StatusCode)
+	}
+
+	data, err := io.ReadAll(req.Body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var pokemon Pokemon
+	if err := json.Unmarshal(data, &pokemon); err != nil {
+		return nil, err
+	}
+	return &pokemon, nil
 }
