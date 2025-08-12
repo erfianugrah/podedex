@@ -35,8 +35,33 @@ type PokemonName struct {
 }
 
 type Pokemon struct {
-	Difficulty int    `json:"base_experience"`
-	Name       string `json:"name"`
+	Name       string         `json:"name"`
+	Height     int            `json:"height"`
+	Weight     int            `json:"weight"`
+	Difficulty int            `json:"base_experience"`
+	Stats      []PokemonStats `json:"stats"`
+	Types      []PokemonTypes `json:"types"`
+}
+
+type PokemonStats struct {
+	BaseStat int         `json:"base_stat"`
+	Effort   int         `json:"effort"`
+	Stat     PokemonStat `json:"stat"`
+}
+
+type PokemonStat struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+type PokemonTypes struct {
+	Slot int         `json:"slot"`
+	Type PokemonType `json:"type"`
+}
+
+type PokemonType struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
 }
 
 func FetchLocation(url string) (*Location, error) {

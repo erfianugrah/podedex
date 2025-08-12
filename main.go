@@ -59,6 +59,11 @@ func main() {
 			description: "Attempt to catch a pokemon",
 			callback:    commandCatch,
 		},
+		"inspect": {
+			name:        "inspect",
+			description: "Look at the pokemon details",
+			callback:    commandInspect,
+		},
 	}
 
 	apiConfig := &config{
@@ -317,4 +322,32 @@ func commandCatch(urls *config, args []string) error {
 
 	return nil
 
+}
+
+func commandInspect(config *config, args []string) error {
+	if len(args) == 0 {
+		fmt.Println("Please input a pokemon")
+		return nil
+	}
+	pokemonName := args[0]
+
+	// Check if already caught
+	if _, alreadyCaught := config.Pokemon[pokemonName]; alreadyCaught {
+		fmt.Printf("Name: %s\n", config.Pokemon[pokemonName].Name)
+		fmt.Printf("Height: %d\n", config.Pokemon[pokemonName].Height)
+		fmt.Printf("Weight: %d\n", config.Pokemon[pokemonName].Weight)
+
+		fmt.Println("Stats:")
+		for _, stat := range config.Pokemon[pokemonName].Stats {
+			fmt.Printf("  -%s: %d\n", stat.Stat.Name, stat.BaseStat)
+		}
+
+		fmt.Println("Types:")
+		for _, pokemonType := range config.Pokemon[pokemonName].Types {
+			fmt.Printf("  - %s\n", pokemonType.Type.Name)
+		}
+		return nil
+	}
+	fmt.Println("Pokemon not found, catch the pokemon first")
+	return nil
 }
